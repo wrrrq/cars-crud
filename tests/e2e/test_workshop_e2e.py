@@ -35,15 +35,16 @@ def test_user_edits_car_and_change_survives_reload(page, live_server):
     page.get_by_label("Year", exact=True).fill("2023")
     page.get_by_role("button", name="Save changes").click()
     
-    # 4. 【关键修改】等待页面跳转，并强制留出3秒给云端渲染
+    # 4. 等待页面跳转，然后强制刷新页面，确保读到最新数据
     page.wait_for_url(re.compile(r"/cars/\d+$"), timeout=15000)
-    page.wait_for_timeout(3000) 
+    page.reload()
+    page.wait_for_timeout(3000) # 强制等待 3 秒让云端渲染
     
-    # 5. 改用更稳定的 ID 定位器来检测
+    # 5. 重新断言
     expect(page.locator("#car-model")).to_have_text("Accord", timeout=15000)
     expect(page.locator("#car-year")).to_have_text("2023", timeout=15000)
     
-    # 6. 刷新页面并再次断言
+    # 6. 再次刷新并断言（检查改动是否持久化）
     page.reload()
     page.wait_for_timeout(3000)
     expect(page.locator("#car-model")).to_have_text("Accord", timeout=15000)
