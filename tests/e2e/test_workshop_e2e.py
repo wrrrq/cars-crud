@@ -36,13 +36,16 @@ def test_user_edits_car_and_change_survives_reload(page, live_server):
     page.get_by_label("Year", exact=True).fill("2023")
     page.get_by_role("button", name="Save changes").click()
     
-    # 4. 断言页面标题变成了 Honda Accord
-    expect(page.get_by_role("heading", name="Honda Accord")).to_be_visible()
+    # ⭐ 关键修复：点击保存后，强制等待 URL 跳转回详情页（/cars/数字），给云端渲染留出时间
+    page.wait_for_url(re.compile(r"/cars/\d+$"))
     
-    # 5. 刷新页面
+    # ⭐ 关键修复：使用 PDF 提示的 #car-model 和 #car-year 断言，不再依赖容易出错的 heading
+    expect(page.locator("#car-model")).to_have_text("Accord")
+    expect(page.locator("#car-year")).to_have_text("2023")
+    
+    # 4. 刷新页面，验证数据是否真的持久化到了数据库
     page.reload()
     
-    # 6. 再次断言标题和值依然正确（证明数据在 SQLite 中持久化成功）
-    expect(page.get_by_role("heading", name="Honda Accord")).to_be_visible()
+    # 5. 再次断言 ID 元素的值
     expect(page.locator("#car-model")).to_have_text("Accord")
     expect(page.locator("#car-year")).to_have_text("2023")
