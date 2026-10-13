@@ -25,7 +25,7 @@ def test_user_edits_car_and_change_survives_reload(page, live_server):
     page.get_by_role("button", name="Create car").click()
     
     expect(page).to_have_url(re.compile(r"/cars/\d+$"))
-    expect(page.get_by_role("heading", name="Honda Civic")).to_be_visible()
+    expect(page.get_by_role("heading", name="Honda Civic")).to_be_visible(timeout=15000)
     
     # 2. 点击 Edit car 链接
     page.get_by_role("link", name="Edit car").click()
@@ -35,13 +35,12 @@ def test_user_edits_car_and_change_survives_reload(page, live_server):
     page.get_by_label("Year", exact=True).fill("2023")
     page.get_by_role("button", name="Save changes").click()
     
-    # 4. 断言页面标题变成了 Honda Accord
-    expect(page.get_by_role("heading", name="Honda Accord")).to_be_visible()
+    # 4. 【重要】等待 URL 跳转回详情页，解决云端渲染慢的问题
+    page.wait_for_url(re.compile(r"/cars/\d+$"), timeout=15000)
+    expect(page.get_by_role("heading", name="Honda Accord")).to_be_visible(timeout=15000)
     
-    # 5. 刷新页面
+    # 5. 刷新页面并再次断言
     page.reload()
-    
-    # 6. 再次断言标题和值依然正确
-    expect(page.get_by_role("heading", name="Honda Accord")).to_be_visible()
-    expect(page.locator("#car-model")).to_have_text("Accord")
-    expect(page.locator("#car-year")).to_have_text("2023")
+    expect(page.get_by_role("heading", name="Honda Accord")).to_be_visible(timeout=15000)
+    expect(page.locator("#car-model")).to_have_text("Accord", timeout=15000)
+    expect(page.locator("#car-year")).to_have_text("2023", timeout=15000)
