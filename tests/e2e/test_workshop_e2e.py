@@ -34,12 +34,20 @@ def test_user_edits_car_and_change_survives_reload(page, live_server):
     # 3. 更改 Model 和 Year
     page.get_by_label("Model", exact=True).fill("Accord")
     page.get_by_label("Year", exact=True).fill("2023")
+    
+    # ⭐ 关键修复 1：强制触发 input 事件，让前端 JS 同步状态（防止无头浏览器竞态条件）
+    page.get_by_label("Model", exact=True).dispatch_event("input")
+    page.get_by_label("Year", exact=True).dispatch_event("input")
+    
+    # ⭐ 关键修复 2：给前端一点反应时间
+    page.wait_for_timeout(500)
+    
     page.get_by_role("button", name="Save changes").click()
     
-    # ⭐ 关键修复：点击保存后，强制等待 URL 跳转回详情页（/cars/数字），给云端渲染留出时间
+    # 等待跳转回详情页
     page.wait_for_url(re.compile(r"/cars/\d+$"))
     
-    # ⭐ 关键修复：使用 PDF 提示的 #car-model 和 #car-year 断言，不再依赖容易出错的 heading
+    # 使用 PDF 提示的 #car-model 和 #car-year 断言
     expect(page.locator("#car-model")).to_have_text("Accord")
     expect(page.locator("#car-year")).to_have_text("2023")
     
